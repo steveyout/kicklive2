@@ -65,7 +65,7 @@ const MOCK_REACTION_PHRASES: Record<string, string[]> = {
 export default function LiveChat({ matchId, category }: LiveChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Load initial pre-seeded messages
   useEffect(() => {
@@ -130,9 +130,11 @@ export default function LiveChat({ matchId, category }: LiveChatProps) {
     return () => clearInterval(interval);
   }, [matchId, category]);
 
-  // Handle instant scrolling
+  // Handle instant scrolling without focus stealing or shifting body layout
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const handleSend = (e: React.FormEvent) => {
@@ -171,7 +173,11 @@ export default function LiveChat({ matchId, category }: LiveChatProps) {
       </div>
 
       {/* Messages Feed View */}
-      <div className="flex-1 overflow-y-auto space-y-3.5 pr-1 mb-4 scrollbar-none" style={{ scrollbarWidth: "none" }}>
+      <div 
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto space-y-3.5 pr-1 mb-4 scrollbar-none" 
+        style={{ scrollbarWidth: "none" }}
+      >
         <AnimatePresence initial={false}>
           {messages.map((msg) => {
             const isMe = msg.user === "GlobalViewer_You";
@@ -223,7 +229,6 @@ export default function LiveChat({ matchId, category }: LiveChatProps) {
             );
           })}
         </AnimatePresence>
-        <div ref={chatEndRef} />
       </div>
 
       {/* Chat Submission Toolbar */}
