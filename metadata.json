@@ -1,0 +1,6 @@
+{
+  "name": "KickLive",
+  "description": "A sleek, responsive, and animated sports streaming dashboard showcasing live matches, sports categories, video playback, and live statistics with immersive Framer Motion transitions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

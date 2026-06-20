@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KickLive | Free Sports Live Streams</title>
+    <link rel="icon" type="image/jpeg" href="/src/assets/images/kicklive_favicon.jpg" />
+    <script>
+      // Support environments where Object.defineProperty is needed to patch fetch
+      (function() {
+        try {
+          var originalFetch = window.fetch;
+          var customFetch = originalFetch;
+          Object.defineProperty(window, 'fetch', {
+            get: function() {
+              return customFetch;
+            },
+            set: function(val) {
+              customFetch = val;
+            },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {
+          console.warn('Failed to define fetch setter stub:', e);
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
