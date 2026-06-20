@@ -1,0 +1,10 @@
+# Netlify Redirects File
+# --------------------
+# Define how Netlify should handle redirects, API proxies, and SPA router reloads.
+
+# 1. API Proxie to your Node/Express backend.
+# Replace the placeholder URL below with your actual backend service URL (e.g., on Render, Railway, fly.io, or GCP)
+# /api/*  https://your-express-backend-app.onrender.com/api/:splat  200
+
+# 2. SPA routing fallback (ensure index.html handles client-side routes, preventing 404 on page refreshes)
+/*  /index.html  200

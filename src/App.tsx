@@ -207,7 +207,7 @@ export default function App() {
             <div className="relative shrink-0">
               <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-red-600 to-orange-500 overflow-hidden flex items-center justify-center shadow-[0_4px_15px_rgba(220,38,38,0.3)] border border-white/10">
                 <img 
-                  src="/src/assets/images/kicklive_logo.jpg" 
+                  src="/kicklive_logo.jpg" 
                   alt="KickLive Logo Icon" 
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
