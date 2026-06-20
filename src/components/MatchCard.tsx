@@ -38,12 +38,12 @@ export default function MatchCard({
   isSelected = false
 }: MatchCardProps) {
   const live = isMatchLive(match.date);
-  const homeBadge = match.teams?.home?.badge 
-    ? `https://streamed.pk/api/images/badge/${match.teams.home.badge}.webp`
+  const homeBadge = match.teams?.home?.badge && !match.id.startsWith("match_")
+    ? `/api/images/badge/${match.teams.home.badge}.webp`
     : getTeamBadgeFallback(match.teams?.home?.name || "Home Team", match.category);
 
-  const awayBadge = match.teams?.away?.badge
-    ? `https://streamed.pk/api/images/badge/${match.teams.away.badge}.webp`
+  const awayBadge = match.teams?.away?.badge && !match.id.startsWith("match_")
+    ? `/api/images/badge/${match.teams.away.badge}.webp`
     : getTeamBadgeFallback(match.teams?.away?.name || "Away Team", match.category);
 
   const [countdown, setCountdown] = React.useState<string>("");

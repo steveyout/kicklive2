@@ -199,29 +199,57 @@ export function getLiveMinutes(timestamp: number): string {
 /**
  * Safely fetches JSON from an API endpoint, checking if the response is actually HTML
  * (which static web hosts like Vercel/Netlify return with status 200 for missing backend endpoints).
+ * If it fails or returns HTML, it gracefully attempts to fetch directly from the upstream production API (https://streamed.pk)
+ * to ensure that static Jamstack deployments remain 100% operational with real live streams!
  */
 export async function safeFetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(url, { signal });
-  if (!res.ok) {
-    throw new Error(`HTTP error! status: ${res.status}`);
-  }
-  
-  const contentType = res.headers.get("content-type");
-  if (contentType && contentType.toLowerCase().includes("text/html")) {
-    throw new Error("API returned HTML instead of JSON. Static host SPA fallback active.");
-  }
-  
-  // Also check text content to prevent crash in case headers are omitted but content is HTML
-  const cloned = res.clone();
   try {
-    const text = await cloned.text();
-    if (text.trim().startsWith("<!doctype html") || text.trim().startsWith("<html")) {
-      throw new Error("API response starts with HTML tag. Static host SPA fallback active.");
+    const res = await fetch(url, { signal });
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
     }
-  } catch (e) {
-    // text conversion failed, let the json parser handle it
-  }
+    
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.toLowerCase().includes("text/html")) {
+      throw new Error("API returned HTML instead of JSON. Static host SPA fallback active.");
+    }
+    
+    // Also check text content to prevent crash in case headers are omitted but content is HTML
+    const cloned = res.clone();
+    try {
+      const text = await cloned.text();
+      if (text.trim().startsWith("<!doctype html") || text.trim().startsWith("<html")) {
+        throw new Error("API response starts with HTML tag. Static host SPA fallback active.");
+      }
+    } catch (e) {
+      // text conversion failed, let the json parser handle it
+    }
 
-  return await res.json();
+    return await res.json();
+  } catch (err) {
+    // If we're hitting a local API route and it failed or got intercepted by a static router,
+    // let's try reading directly from the production upstream API!
+    if (url.startsWith("/api/")) {
+      const upstreamUrl = `https://streamed.pk${url}`;
+      console.warn(`Local API ${url} failed. Attempting upstream direct query: ${upstreamUrl}`);
+      try {
+        const upstreamRes = await fetch(upstreamUrl, { signal });
+        if (upstreamRes.ok) {
+          const upContentType = upstreamRes.headers.get("content-type");
+          if (!upContentType || !upContentType.toLowerCase().includes("text/html")) {
+            const clonedUpstream = upstreamRes.clone();
+            const upText = await clonedUpstream.text();
+            if (!upText.trim().startsWith("<!doctype html") && !upText.trim().startsWith("<html")) {
+              return JSON.parse(upText) as T;
+            }
+          }
+        }
+      } catch (upstreamErr) {
+        console.error("Upstream API query also failed:", upstreamErr);
+      }
+    }
+    // If everything failed, throw the original error to let the UI fall back gracefully
+    throw err;
+  }
 }
 
