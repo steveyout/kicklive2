@@ -39,15 +39,11 @@ export default function MatchCard({
 }: MatchCardProps) {
   const live = isMatchLive(match.date);
   const homeBadge = match.teams?.home?.badge 
-    ? (match.id.startsWith("match_") 
-        ? getTeamBadgeFallback(match.teams.home.name, match.category)
-        : `/api/images/badge/${match.teams.home.badge}.webp`)
+    ? `https://streamed.pk/api/images/badge/${match.teams.home.badge}.webp`
     : getTeamBadgeFallback(match.teams?.home?.name || "Home Team", match.category);
 
   const awayBadge = match.teams?.away?.badge
-    ? (match.id.startsWith("match_")
-        ? getTeamBadgeFallback(match.teams.away.name, match.category)
-        : `/api/images/badge/${match.teams.away.badge}.webp`)
+    ? `https://streamed.pk/api/images/badge/${match.teams.away.badge}.webp`
     : getTeamBadgeFallback(match.teams?.away?.name || "Away Team", match.category);
 
   const [countdown, setCountdown] = React.useState<string>("");

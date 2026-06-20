@@ -201,8 +201,7 @@ export default function StreamPlayer({ match, onClose }: StreamPlayerProps) {
               src={getEmbedUrl()}
               className="w-full h-full"
               allowFullScreen
-              referrerPolicy="no-referrer"
-              allow="autoplay; encrypted-media; picture-in-picture"
+              allow="autoplay; encrypted-media; picture-in-picture; accelerometer; clipboard-write; gyroscope; web-share"
               scrolling="no"
               frameBorder="0"
             />
