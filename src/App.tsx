@@ -21,7 +21,8 @@ import MatchCard from "./components/MatchCard";
 import StreamPlayer from "./components/StreamPlayer";
 import StatsPanel from "./components/StatsPanel";
 import LiveChat from "./components/LiveChat";
-import { isMatchLive } from "./utils";
+import { isMatchLive, safeFetchJson } from "./utils";
+import { MOCK_SPORTS, getMockMatches, filterClientMatches } from "./fallbackData";
 
 type FilterType = "live" | "today" | "popular" | "all" | "favorites";
 
@@ -66,18 +67,14 @@ export default function App() {
   // Fetch sports categories on mount
   useEffect(() => {
     setSportsLoading(true);
-    fetch("/api/sports")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load sports list");
-        return res.json();
-      })
+    safeFetchJson<Sport[]>("/api/sports")
       .then((data: Sport[]) => {
         setSports(data);
         setSportsLoading(false);
       })
       .catch((err) => {
-        console.error("Sports list fetch failed:", err);
-        setApiError("Unable to reach the broadcast center. Using fallbacks.");
+        console.warn("Sports list fetch failed (falling back locally):", err);
+        setSports(MOCK_SPORTS);
         setSportsLoading(false);
       });
   }, []);
@@ -86,32 +83,35 @@ export default function App() {
   const fetchMatches = () => {
     setMatchesLoading(true);
     let endpoint = "/api/matches/all";
+    let mockFilterType = "all";
 
     if (selectedSportId === null) {
       // General filters
       if (activeFilter === "live") {
         endpoint = "/api/matches/live";
+        mockFilterType = "live";
       } else if (activeFilter === "popular") {
         endpoint = "/api/matches/all/popular";
+        mockFilterType = "all-popular";
       } else if (activeFilter === "today") {
         endpoint = "/api/matches/all-today";
+        mockFilterType = "today";
       } else {
         endpoint = "/api/matches/all";
+        mockFilterType = "all";
       }
     } else {
       // Sport specific filters
       if (activeFilter === "popular") {
         endpoint = `/api/matches/${selectedSportId}/popular`;
+        mockFilterType = "sport-popular";
       } else {
         endpoint = `/api/matches/${selectedSportId}`;
+        mockFilterType = "sport";
       }
     }
 
-    fetch(endpoint)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load matches list");
-        return res.json();
-      })
+    safeFetchJson<APIMatch[]>(endpoint)
       .then((data: APIMatch[]) => {
         // Post filter adjustments for local tabs that cannot be done on the server
         let nextMatches = data || [];
@@ -130,7 +130,19 @@ export default function App() {
         setIsRefreshing(false);
       })
       .catch((err) => {
-        console.error("Matches fetch error:", err);
+        console.warn("Matches fetch error (falling back locally):", err);
+        // Execute dynamic local mock client-side filter
+        let nextMatches = filterClientMatches(mockFilterType, selectedSportId);
+        
+        if (selectedSportId !== null) {
+          if (activeFilter === "live") {
+            nextMatches = nextMatches.filter(m => isMatchLive(m.date));
+          } else if (activeFilter === "today") {
+            nextMatches = nextMatches.filter(m => Math.abs(Date.now() - m.date) < 24 * 3600 * 1000);
+          }
+        }
+
+        setMatches(nextMatches || []);
         setMatchesLoading(false);
         setIsRefreshing(false);
       });
@@ -142,13 +154,15 @@ export default function App() {
     if (activeFilter === "favorites") {
       setMatchesLoading(true);
       // Fetch everything to slice from favorited list
-      fetch("/api/matches/all")
-        .then(res => res.json())
+      safeFetchJson<APIMatch[]>("/api/matches/all")
         .then((data: APIMatch[]) => {
           setMatches(data.filter(m => favorites.includes(m.id)));
           setMatchesLoading(false);
         })
-        .catch(() => {
+        .catch((err) => {
+          console.warn("Favorites fetch falling back to local dataset:", err);
+          const localData = getMockMatches();
+          setMatches(localData.filter(m => favorites.includes(m.id)));
           setMatchesLoading(false);
         });
     } else {

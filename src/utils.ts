@@ -195,3 +195,33 @@ export function getLiveMinutes(timestamp: number): string {
   if (diffMins > 90) return "90+'";
   return `${diffMins}'`;
 }
+
+/**
+ * Safely fetches JSON from an API endpoint, checking if the response is actually HTML
+ * (which static web hosts like Vercel/Netlify return with status 200 for missing backend endpoints).
+ */
+export async function safeFetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
+  const res = await fetch(url, { signal });
+  if (!res.ok) {
+    throw new Error(`HTTP error! status: ${res.status}`);
+  }
+  
+  const contentType = res.headers.get("content-type");
+  if (contentType && contentType.toLowerCase().includes("text/html")) {
+    throw new Error("API returned HTML instead of JSON. Static host SPA fallback active.");
+  }
+  
+  // Also check text content to prevent crash in case headers are omitted but content is HTML
+  const cloned = res.clone();
+  try {
+    const text = await cloned.text();
+    if (text.trim().startsWith("<!doctype html") || text.trim().startsWith("<html")) {
+      throw new Error("API response starts with HTML tag. Static host SPA fallback active.");
+    }
+  } catch (e) {
+    // text conversion failed, let the json parser handle it
+  }
+
+  return await res.json();
+}
+

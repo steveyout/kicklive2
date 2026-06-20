@@ -16,7 +16,7 @@ import {
   Loader2
 } from "lucide-react";
 import { APIMatch, Stream } from "../types";
-import { formatMatchTime, isMatchLive, getLiveMinutes } from "../utils";
+import { formatMatchTime, isMatchLive, getLiveMinutes, safeFetchJson } from "../utils";
 
 interface StreamPlayerProps {
   match: APIMatch;
@@ -50,14 +50,8 @@ export default function StreamPlayer({ match, onClose }: StreamPlayerProps) {
 
     const controller = new AbortController();
     
-    fetch(`/api/stream/${currentSource.source}/${currentSource.id}`, {
-      signal: controller.signal
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("API streaming error");
-        return res.json();
-      })
-      .then((data: Stream[]) => {
+    safeFetchJson<Stream[]>(`/api/stream/${currentSource.source}/${currentSource.id}`, controller.signal)
+      .then((data) => {
         if (data && data.length > 0) {
           setStreams(data);
           setSelectedStream(data[0]); // Setup first language stream automatically
@@ -68,9 +62,9 @@ export default function StreamPlayer({ match, onClose }: StreamPlayerProps) {
       })
       .catch((err) => {
         if (err.name !== "AbortError") {
-          console.error("Stream fetch failure:", err);
-          setError("Failed to resolve live streaming streams. Falling back to primary channels.");
-          // Provide fallback stream
+          console.error("Stream fetch failure, using fallback streams:", err);
+          
+          // Provide high-fidelity static fallback streams
           const fallbackList: Stream[] = [
             {
               id: `fb_1_${currentSource.id}`,

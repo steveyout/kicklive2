@@ -1,10 +1,19 @@
 # Netlify Redirects File
-# --------------------
-# Define how Netlify should handle redirects, API proxies, and SPA router reloads.
+# ---------------------
+# EXPLANATION OF HTML RETURNING 200 FOR /api:
+# Because Netlify is a static-file hosting service, it does not execute your Node.js
+# backend code ('server.ts') automatically. Thus, the catch-all rule (/* /index.html 200)
+# intercepts all your fetch('/api/...') calls and serves the 'index.html' file instead.
+#
+# HOW TO FIX THIS:
+# 1. Host your 'server.ts' backend separately on a Node-capable platform:
+#    (e.g., Render, Railway, Fly.io, or Google Cloud Run)
+# 2. Uncomment the line below and replace 'https://your-live-backend-url.com' with your actual server URL.
+#    This instructs Netlify to act as an API gateway proxy, forwarding `/api/...` calls to your real server.
+#
+# /api/*  https://your-live-backend-url.com/api/:splat  200
 
-# 1. API Proxie to your Node/Express backend.
-# Replace the placeholder URL below with your actual backend service URL (e.g., on Render, Railway, fly.io, or GCP)
-# /api/*  https://your-express-backend-app.onrender.com/api/:splat  200
-
-# 2. SPA routing fallback (ensure index.html handles client-side routes, preventing 404 on page refreshes)
+# FALLBACK FOR SPA ROUTING:
+# Catch-all rule that lets React handle router paths. Keep this below the API rule!
 /*  /index.html  200
+
